@@ -1,6 +1,13 @@
-@TestJob.Api_HostAddress = http://localhost:5026
+@TestJob.Api_HostAddress = http://localhost:8090
 
-GET {{TestJob.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Обработать первый предоставленный набор данных
+POST {{TestJob.Api_HostAddress}}/api/process-page
+Content-Type: application/json
 
-###
+< ../../../json_payload_1.txt
+
+### Обработать второй предоставленный набор данных
+POST {{TestJob.Api_HostAddress}}/api/process-page
+Content-Type: application/json
+
+< ../../../json_payload_2.txt

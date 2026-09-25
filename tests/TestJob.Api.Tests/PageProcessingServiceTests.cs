@@ -51,7 +51,7 @@ public sealed class PageProcessingServiceTests
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
         var json = await File.ReadAllTextAsync(Path.Combine(root, fileName));
         return JsonSerializer.Deserialize<ProcessPageRequest>(json)
-            ?? throw new InvalidOperationException("The sample request could not be deserialized.");
+            ?? throw new InvalidOperationException("Не удалось десериализовать пример запроса.");
     }
 
     private sealed class RecordingElementRepository : IElementRepository

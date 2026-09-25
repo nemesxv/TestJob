@@ -1,33 +1,69 @@
 # TestJob API
 
-Minimal .NET 10 REST API for the supplied test assignment. The endpoint decodes
-the URL and HTML page, parses the page with AngleSharp, extracts element
-attributes and email addresses, decrypts AES-256-ECB data, and stores discovered
-elements in PostgreSQL through Dapper.
+Минимальный REST API на .NET 10 для выполнения тестового задания. Сервис декодирует URL и HTML-страницу, разбирает HTML с помощью AngleSharp, извлекает атрибуты элементов и адреса электронной почты, расшифровывает данные AES-256-ECB и сохраняет найденные элементы в PostgreSQL через Dapper.
 
-## Current implementation
+## Что реализовано
 
-- `POST /api/process-page`
-- FluentValidation request validation
-- AngleSharp HTML parsing and CSS selectors
-- compiled email regular expression with a timeout
-- AES-256, ECB, `PaddingMode.None` decryption
-- asynchronous PostgreSQL writes through Dapper/Npgsql
-- indented JSON responses with the required snake_case field names
-- Swagger UI at `/api/swagger`
-- browser UI at `/` with local JSON payload loading and formatted results
-- sandboxed visual preview for `web-page.txt` and decoded `page_b64` content
-- unit tests against both supplied payloads
+- `POST /api/process-page`;
+- проверка входного запроса с помощью FluentValidation;
+- разбор HTML и поддержка CSS-селекторов через AngleSharp;
+- скомпилированное регулярное выражение для адресов электронной почты с ограничением времени выполнения;
+- расшифровка AES-256 в режиме ECB с `PaddingMode.None`;
+- асинхронная запись в PostgreSQL через Dapper и Npgsql;
+- форматированный JSON с требуемыми именами полей в `snake_case`;
+- Swagger UI по адресу `/api/swagger`;
+- веб-интерфейс по адресу `/` с загрузкой локального JSON и форматированным выводом результата;
+- изолированный предварительный просмотр `web-page.txt` и содержимого `page_b64`;
+- модульные и HTTP-тесты для обоих предоставленных наборов данных.
 
-Docker Compose is intentionally deferred to a later step.
+## Запуск через Docker Compose
 
-## Run locally
+В корне репозитория выполните:
 
-Prerequisites: .NET 10 SDK and a running PostgreSQL instance.
+```powershell
+docker compose up -d --build
+docker compose logs -f api
+```
 
-The default connection string is in
-`src/TestJob.Api/appsettings.json`. It can be overridden with the environment
-variable `ConnectionStrings__Postgres`.
+В Windows требуется Docker Desktop с поддержкой Linux-контейнеров, в Linux — Docker Engine и Compose v2.
+
+- Приложение: http://localhost:8090/
+- Swagger: http://localhost:8090/api/swagger
+- pgAdmin: http://localhost:8080/ (настольный режим, без формы входа и мастер-пароля).
+
+В pgAdmin откройте «Серверы → TestJob — PostgreSQL 18 → Базы данных → testjob → Схемы → public → Таблицы → elements». Сохранённое подключение использует файл pgpass, которому при запуске назначаются права Linux, поэтому пароль базы данных вводить не требуется.
+
+Compose запускает три сервиса: API на .NET 10, PostgreSQL 18 и pgAdmin 9.18. Многоэтапный Dockerfile собирает и публикует API в образ среды выполнения. По просьбе владельца исходный код не подключается как том и не собирается при старте контейнера; это намеренное отступление от пункта 3 требований к развёртыванию. Данные PostgreSQL хранятся в томе по адресу `/var/lib/postgresql` и сохраняются после перезапуска и команды `docker compose down`. Команда `docker compose down -v` удаляет постоянные тома. Для пересборки API после изменения исходного кода используйте `docker compose up -d --build api`.
+
+Учётные данные в Compose предназначены только для локальной демонстрации. Наружу опубликованы только порты на loopback-интерфейсе, а база данных доступна внутри сети Compose. Перед публичным развёртыванием настройте аутентификацию и безопасное хранение секретов.
+
+## Примеры результатов и проверка
+
+Файлы `json_result_1.txt` и `json_result_2.txt` содержат HTTP-ответы, сформированные интеграционными тестами внутри процесса с тестовым репозиторием. Они пока не подтверждены запуском реального контейнера PostgreSQL.
+
+Для полной проверки через Compose выполните:
+
+```powershell
+pwsh -File deploy/verify.ps1
+```
+
+Сценарию требуется PowerShell 7 в Windows или Linux. Он запускает Compose, отправляет оба набора данных, сохраняет ответы, проверяет добавление 247 строк, перезапускает PostgreSQL, а затем проверяет сохранность данных и доступность pgAdmin по HTTP. Дополнительно откройте pgAdmin в браузере и убедитесь, что база доступна без ручного ввода пароля. Каждый запуск сценария намеренно добавляет ещё 247 строк.
+
+В примерах выбираются 238 и 9 элементов. Расшифрованный текст буквально равен `AES Error: Object reference not set to an instance of an object.` — это содержимое предоставленного шифротекста, а не ошибка приложения.
+
+Успешный запрос возвращает HTTP 200, некорректные данные — HTTP 400, непредвиденная ошибка — HTTP 500. Все ответы имеют единый требуемый формат. Некорректный JSON также возвращается в этом формате. Повторяющиеся адреса и элементы сохраняются в порядке обнаружения. Для отсутствующего атрибута возвращается пустая строка, а в базе хранится `OuterHtml`, сформированный AngleSharp. Вставки одного запроса выполняются в транзакции. Сервис не загружает страницу по URL и не удаляет пробельные символы из расшифрованного текста.
+
+Текущее состояние проверки: автоматические тесты сервиса и HTTP-контракта проходят, конфигурация Compose корректна. Проверка контейнеров, PostgreSQL и pgAdmin в работе требует исправного Docker Engine. Публикация в GitHub ещё не выполнена до решения владельца о видимости репозитория; локальная история не связана с исходным публичным шаблоном.
+
+На текущем компьютере Docker Desktop сообщает `Virtual Machine Platform not enabled` и `No virtualization available`. Необходимо включить компоненты Windows Virtual Machine Platform/WSL с правами администратора, выполнить запрошенную Windows перезагрузку и запустить Docker Desktop. Поэтому запуск контейнеров, сохранность данных PostgreSQL и вход в pgAdmin без пароля на этом компьютере пока не подтверждены.
+
+Предварительный просмотр HTML блокирует внешние стили, изображения, сценарии и сетевые запросы, поэтому не воспроизводит оформление исходного сайта. Файл с тестовой HTML-страницей оставлен без изменений, поскольку это входной набор данных.
+
+## Локальный запуск без Docker
+
+Требуются .NET 10 SDK и запущенный экземпляр PostgreSQL.
+
+Строка подключения по умолчанию находится в `src/TestJob.Api/appsettings.json`. Её можно переопределить переменной окружения `ConnectionStrings__Postgres`.
 
 ```powershell
 dotnet restore TestJob.slnx
@@ -35,21 +71,12 @@ dotnet test TestJob.slnx
 dotnet run --project src/TestJob.Api --urls http://localhost:8090
 ```
 
-Open `http://localhost:8090/` for the browser UI, load either
-`json_payload_1.txt` or `json_payload_2.txt`, and submit it to the API. Swagger
-remains available at `http://localhost:8090/api/swagger`.
+Откройте `http://localhost:8090/`, загрузите `json_payload_1.txt` или `json_payload_2.txt` и отправьте запрос. Swagger остаётся доступен по адресу `http://localhost:8090/api/swagger`.
 
-The `elements` table is created automatically on the first successful request.
+Таблица `elements` создаётся автоматически при первом успешном запросе.
 
-## Why the endpoint is asynchronous
+## Почему обработчик асинхронный
 
-The controller, validator, HTML parser, and repository expose asynchronous APIs.
-Most importantly, opening the PostgreSQL connection and executing commands are
-I/O operations; awaiting them releases the request thread while the database is
-working, allowing the server to handle other requests efficiently.
+Контроллер, валидатор, HTML-парсер и репозиторий предоставляют асинхронные методы. Главное — открытие подключения к PostgreSQL и выполнение команд являются операциями ввода-вывода. `await` освобождает поток обработки запроса на время работы базы данных и позволяет серверу эффективнее обслуживать другие запросы.
 
-Base64 decoding, regular-expression matching, CSS selection, and AES decryption
-are in-memory CPU work. .NET does not provide genuinely asynchronous variants
-for these operations, and wrapping them in `Task.Run` would only move the work to
-another thread while adding scheduling overhead. They therefore remain
-synchronous inside the otherwise asynchronous request flow.
+Декодирование Base64, поиск регулярным выражением, применение CSS-селектора и расшифровка AES выполняются в памяти процессором. В .NET для них нет по-настоящему асинхронных вариантов, а обёртывание в `Task.Run` только перенесло бы работу в другой поток и добавило накладные расходы планировщика. Поэтому эти операции остаются синхронными внутри асинхронного потока обработки запроса.

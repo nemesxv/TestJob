@@ -1,0 +1,48 @@
+name: testjob
+services:
+  api:
+    build: .
+    environment:
+      ASPNETCORE_URLS: http://+:8090
+      ConnectionStrings__Postgres: Host=db;Database=testjob;Username=testjob;Password=testjob
+    ports:
+      - "127.0.0.1:8090:8090"
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: testjob
+      POSTGRES_USER: testjob
+      POSTGRES_PASSWORD: testjob
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./deploy/init.sql:/docker-entrypoint-initdb.d/001-elements.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testjob -d testjob"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: local-demo-only
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+    entrypoint: ["/bin/sh", "-c", "cp /config/pgpass /tmp/pgpass && chmod 600 /tmp/pgpass && exec /entrypoint.sh"]
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./deploy/servers.json:/pgadmin4/servers.json:ro
+      - ./deploy/pgpass:/config/pgpass:ro
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres_data:
+  pgadmin_data:

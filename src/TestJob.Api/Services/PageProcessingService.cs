@@ -15,6 +15,7 @@ public interface IPageProcessingService
 
 public sealed class PageProcessingService(IElementRepository elementRepository) : IPageProcessingService
 {
+    private static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
     private static readonly Regex EmailRegex = new(
         @"(?<![\w.!#$%&'*+/=?^`{|}~-])[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+(?![\w-])",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
@@ -31,7 +32,7 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
             var decryptedText = Decrypt(request.EncryptedTextBytesBase64!, request.KeyBytesBase64!);
 
             var parser = new HtmlParser();
-            var document = await parser.ParseDocumentAsync(page, cancellationToken);
+            using var document = await parser.ParseDocumentAsync(page, cancellationToken);
 
             IHtmlCollection<IElement> selectedElements;
             try
@@ -40,7 +41,7 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
             }
             catch (Exception exception) when (exception is DomException or ArgumentException)
             {
-                throw new ProcessingException(ErrorCodes.InvalidSelector, exception.Message, exception);
+                throw new ProcessingException(ErrorCodes.InvalidSelector, "Некорректный CSS-селектор.", exception);
             }
 
             var elements = selectedElements
@@ -71,7 +72,9 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return ProcessPageResponse.Error(ErrorCodes.UnexpectedError, exception.Message);
+            return ProcessPageResponse.Error(
+                ErrorCodes.UnexpectedError,
+                "Во время обработки запроса произошла непредвиденная ошибка.");
         }
     }
 
@@ -79,11 +82,15 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
     {
         try
         {
-            return Encoding.UTF8.GetString(Convert.FromBase64String(value));
+            return StrictUtf8.GetString(Convert.FromBase64String(value));
         }
-        catch (FormatException exception)
+        catch (Exception exception) when (exception is FormatException or DecoderFallbackException)
         {
-            throw new ProcessingException(errorCode, exception.Message, exception);
+            var message = errorCode == ErrorCodes.InvalidUrlBase64
+                ? "Поле url_b64 должно содержать корректную Base64-строку в кодировке UTF-8."
+                : "Поле page_b64 должно содержать корректную Base64-строку в кодировке UTF-8.";
+
+            throw new ProcessingException(errorCode, message, exception);
         }
     }
 
@@ -98,7 +105,10 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
         }
         catch (FormatException exception)
         {
-            throw new ProcessingException(ErrorCodes.InvalidEncryptedTextBase64, exception.Message, exception);
+            throw new ProcessingException(
+                ErrorCodes.InvalidEncryptedTextBase64,
+                "Поле encrypted_text_bytes_b64 должно содержать корректную Base64-строку.",
+                exception);
         }
 
         try
@@ -107,14 +117,17 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
         }
         catch (FormatException exception)
         {
-            throw new ProcessingException(ErrorCodes.InvalidKeyBase64, exception.Message, exception);
+            throw new ProcessingException(
+                ErrorCodes.InvalidKeyBase64,
+                "Поле key_bytes_b64 должно содержать корректную Base64-строку.",
+                exception);
         }
 
         if (keyBytes.Length != 32 || encryptedBytes.Length == 0 || encryptedBytes.Length % 16 != 0)
         {
             throw new ProcessingException(
                 ErrorCodes.InvalidEncryptionData,
-                "AES-256 requires a 32-byte key and non-empty ciphertext aligned to a 16-byte block.");
+                "Для AES-256 требуется ключ длиной 32 байта и непустой шифротекст, длина которого кратна блоку 16 байт.");
         }
 
         try
@@ -125,11 +138,14 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
             aes.Mode = CipherMode.ECB;
             aes.Padding = PaddingMode.None;
 
-            return Encoding.UTF8.GetString(aes.DecryptEcb(encryptedBytes, PaddingMode.None));
+            return StrictUtf8.GetString(aes.DecryptEcb(encryptedBytes, PaddingMode.None));
         }
-        catch (CryptographicException exception)
+        catch (Exception exception) when (exception is CryptographicException or DecoderFallbackException)
         {
-            throw new ProcessingException(ErrorCodes.InvalidEncryptionData, exception.Message, exception);
+            throw new ProcessingException(
+                ErrorCodes.InvalidEncryptionData,
+                "Не удалось расшифровать данные AES-256 или преобразовать результат в UTF-8.",
+                exception);
         }
     }
 

@@ -26,6 +26,8 @@ public sealed class PageProcessingController(
         }
 
         var response = await processingService.ProcessAsync(request, cancellationToken);
+        if (response.ErrorCode == ErrorCodes.UnexpectedError)
+            return StatusCode(StatusCodes.Status500InternalServerError, response);
         return response.IsError == 0 ? Ok(response) : BadRequest(response);
     }
 }

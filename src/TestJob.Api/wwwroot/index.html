@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Page Inspector · TestJob API</title>
+  <title>Анализатор страницы · TestJob API</title>
   <style>
     :root {
       color-scheme: dark;
@@ -220,58 +220,58 @@
     </header>
 
     <section class="hero">
-      <p class="eyebrow">HTML processing workbench</p>
-      <h1>Inspect a page.<br>Extract the signal.</h1>
-      <p>Decode, parse, query and decrypt the supplied payload in one request. Every discovered element is persisted through the API’s PostgreSQL repository.</p>
+      <p class="eyebrow">Обработка HTML-страниц</p>
+      <h1>Исследуйте страницу.<br>Извлеките данные.</h1>
+      <p>Декодируйте, разберите, исследуйте и расшифруйте переданные данные одним запросом. Каждый найденный элемент сохраняется в PostgreSQL через репозиторий API.</p>
     </section>
 
     <section class="workspace">
       <form class="panel" id="request-form">
         <div class="panel-head">
           <div>
-            <h2>Request</h2>
-            <p class="hint">Load one of the supplied <code>json_payload_*.txt</code> files or enter values manually.</p>
+            <h2>Запрос</h2>
+            <p class="hint">Загрузите один из файлов <code>json_payload_*.txt</code> или заполните поля вручную.</p>
           </div>
-          <label class="file-button">Load JSON<input id="payload-file" type="file" accept=".json,.txt,application/json,text/plain"></label>
+          <label class="file-button">Загрузить JSON<input id="payload-file" type="file" accept=".json,.txt,application/json,text/plain"></label>
         </div>
 
         <div class="grid">
-          <label>CSS selector<input id="selector" name="selector" placeholder="a[href]" required></label>
-          <label>HTML attribute<input id="attribute" name="attribute" placeholder="href" required></label>
+          <label>CSS-селектор<input id="selector" name="selector" placeholder="a[href]" required></label>
+          <label>HTML-атрибут<input id="attribute" name="attribute" placeholder="href" required></label>
           <label class="wide">URL · Base64<input id="url_b64" name="url_b64" autocomplete="off" required></label>
-          <div class="decoded" id="url-preview"><strong>Decoded URL</strong> — waiting for input</div>
+          <div class="decoded" id="url-preview"><strong>Декодированный URL</strong> — ожидаются данные</div>
 
           <details>
-            <summary>Encrypted and page data</summary>
+            <summary>Шифротекст и данные страницы</summary>
             <div class="details-body">
-              <label>Encrypted text · Base64<textarea id="encrypted_text_bytes_b64" name="encrypted_text_bytes_b64" required></textarea></label>
-              <label>AES-256 key · Base64<textarea id="key_bytes_b64" name="key_bytes_b64" required></textarea></label>
-              <label>HTML page · Base64<textarea id="page_b64" name="page_b64" required></textarea></label>
+              <label>Зашифрованный текст · Base64<textarea id="encrypted_text_bytes_b64" name="encrypted_text_bytes_b64" required></textarea></label>
+              <label>Ключ AES-256 · Base64<textarea id="key_bytes_b64" name="key_bytes_b64" required></textarea></label>
+              <label>HTML-страница · Base64<textarea id="page_b64" name="page_b64" required></textarea></label>
             </div>
           </details>
         </div>
 
-        <button id="submit-button" type="submit">Process payload</button>
+        <button id="submit-button" type="submit">Обработать данные</button>
         <p class="status" id="status" role="status"></p>
       </form>
 
       <section class="panel" aria-live="polite">
         <div class="panel-head">
-          <div><h2>Response</h2><p class="hint">Structured output from the processing service.</p></div>
+          <div><h2>Ответ</h2><p class="hint">Структурированный результат обработки.</p></div>
         </div>
 
-        <div class="empty" id="empty-state"><div><span class="empty-symbol">{ }</span>Submit a valid payload to see extracted elements, email addresses and decrypted text.</div></div>
+        <div class="empty" id="empty-state"><div><span class="empty-symbol">{ }</span>Отправьте корректные данные, чтобы увидеть найденные элементы, адреса электронной почты и расшифрованный текст.</div></div>
         <div class="error" id="error-box" hidden><strong id="error-code"></strong><span id="error-message"></span></div>
         <div class="results" id="results" hidden>
           <div class="metrics">
-            <div class="metric"><span>Elements</span><strong id="elements-count">0</strong></div>
-            <div class="metric"><span>Emails</span><strong id="emails-count">0</strong></div>
+            <div class="metric"><span>Элементы</span><strong id="elements-count">0</strong></div>
+            <div class="metric"><span>Адреса почты</span><strong id="emails-count">0</strong></div>
           </div>
-          <article class="result-card"><h3>Decoded URL</h3><p id="result-url"></p></article>
-          <article class="result-card"><h3>Decrypted plain text</h3><p id="decrypted-text"></p></article>
-          <article class="result-card"><h3>Element attributes</h3><ol class="scroll-list" id="attribute-list"></ol></article>
-          <article class="result-card"><h3>Email addresses</h3><ol class="scroll-list" id="email-list"></ol></article>
-          <article class="result-card"><h3>Raw JSON</h3><pre id="raw-json"></pre></article>
+          <article class="result-card"><h3>Декодированный URL</h3><p id="result-url"></p></article>
+          <article class="result-card"><h3>Расшифрованный текст</h3><p id="decrypted-text"></p></article>
+          <article class="result-card"><h3>Атрибуты элементов</h3><ol class="scroll-list" id="attribute-list"></ol></article>
+          <article class="result-card"><h3>Адреса электронной почты</h3><ol class="scroll-list" id="email-list"></ol></article>
+          <article class="result-card"><h3>Исходный JSON</h3><pre id="raw-json"></pre></article>
         </div>
       </section>
     </section>
@@ -279,17 +279,17 @@
     <section class="panel preview-panel" id="page-preview">
       <div class="panel-head">
         <div>
-          <h2>Captured page</h2>
-          <p class="hint">A safe visual rendering of <code>web-page.txt</code> or the decoded <code>page_b64</code> field.</p>
+          <h2>Предварительный просмотр страницы</h2>
+          <p class="hint">Безопасное отображение <code>web-page.txt</code> или декодированного поля <code>page_b64</code>.</p>
         </div>
         <div class="preview-actions">
-          <span class="security-note">Scripts and network requests are blocked</span>
-          <label class="file-button">Load web-page.txt<input id="html-file" type="file" accept=".html,.htm,.txt,text/html,text/plain"></label>
+          <span class="security-note">Сценарии и сетевые запросы заблокированы</span>
+          <label class="file-button">Загрузить web-page.txt<input id="html-file" type="file" accept=".html,.htm,.txt,text/html,text/plain"></label>
         </div>
       </div>
       <div class="preview-frame-wrap">
-        <iframe class="preview-frame" id="page-frame" sandbox="" referrerpolicy="no-referrer" title="Captured HTML page preview"></iframe>
-        <div class="preview-placeholder" id="preview-placeholder">Load <code>web-page.txt</code> directly, or load one of the JSON payloads above to decode and render its HTML page.</div>
+        <iframe class="preview-frame" id="page-frame" sandbox="" referrerpolicy="no-referrer" title="Предварительный просмотр HTML-страницы"></iframe>
+        <div class="preview-placeholder" id="preview-placeholder">Загрузите <code>web-page.txt</code> напрямую или выберите один из JSON-файлов выше, чтобы декодировать и показать HTML-страницу.</div>
       </div>
       <p class="status" id="preview-status" role="status"></p>
     </section>
@@ -319,16 +319,16 @@
 
       document.querySelector("#page-frame").srcdoc = safeDocument;
       document.querySelector("#preview-placeholder").hidden = true;
-      document.querySelector("#preview-status").textContent = `${sourceName} · ${new Blob([html]).size.toLocaleString()} bytes rendered in a sandbox`;
+      document.querySelector("#preview-status").textContent = `${sourceName} · ${new Blob([html]).size.toLocaleString("ru-RU")} байт · безопасный режим`;
     }
 
     function decodeUrl() {
       const preview = document.querySelector("#url-preview");
       try {
         const value = decodeBase64Utf8(document.querySelector("#url_b64").value);
-        preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Decoded URL" }), ` — ${value}`);
+        preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Декодированный URL" }), ` — ${value}`);
       } catch {
-        preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Decoded URL" }), " — invalid Base64");
+        preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Декодированный URL" }), " — некорректная строка Base64");
       }
     }
 
@@ -338,7 +338,7 @@
       }
       decodeUrl();
       if (payload.page_b64) {
-        renderPage(decodeBase64Utf8(payload.page_b64), "Decoded page_b64");
+        renderPage(decodeBase64Utf8(payload.page_b64), "Декодированное поле page_b64");
       }
     }
 
@@ -347,7 +347,7 @@
       target.replaceChildren();
       for (const value of items ?? []) {
         const item = document.createElement("li");
-        item.textContent = value || "(empty attribute)";
+        item.textContent = value || "(атрибут отсутствует)";
         target.append(item);
       }
     }
@@ -358,7 +358,7 @@
         results.hidden = true;
         errorBox.hidden = false;
         document.querySelector("#error-code").textContent = response.error_code || "REQUEST_FAILED";
-        document.querySelector("#error-message").textContent = response.error_message || "The API rejected the request.";
+        document.querySelector("#error-message").textContent = response.error_message || "API отклонил запрос.";
         return;
       }
 
@@ -378,9 +378,9 @@
       if (!file) return;
       try {
         fillRequest(JSON.parse(await file.text()));
-        status.textContent = `Loaded ${file.name}`;
+        status.textContent = `Загружен файл ${file.name}`;
       } catch (error) {
-        status.textContent = `Could not load JSON: ${error.message}`;
+        status.textContent = `Не удалось загрузить JSON: ${error.message}`;
       }
     });
 
@@ -390,7 +390,7 @@
       try {
         renderPage(await file.text(), file.name);
       } catch (error) {
-        document.querySelector("#preview-status").textContent = `Could not render HTML: ${error.message}`;
+        document.querySelector("#preview-status").textContent = `Не удалось показать HTML: ${error.message}`;
       }
     });
 
@@ -399,8 +399,8 @@
     form.addEventListener("submit", async event => {
       event.preventDefault();
       submitButton.disabled = true;
-      submitButton.textContent = "Processing…";
-      status.textContent = "Sending request to the API";
+      submitButton.textContent = "Обработка…";
+      status.textContent = "Запрос отправляется в API";
 
       const payload = Object.fromEntries(fieldNames.map(name => [name, document.querySelector(`#${name}`).value.trim()]));
       try {
@@ -411,13 +411,13 @@
         });
         const response = await httpResponse.json();
         showResponse(response, httpResponse.ok);
-        status.textContent = httpResponse.ok ? "Processing completed" : `Request failed with HTTP ${httpResponse.status}`;
+        status.textContent = httpResponse.ok ? "Обработка завершена" : `Запрос завершился ошибкой HTTP ${httpResponse.status}`;
       } catch (error) {
         showResponse({ error_code: "NETWORK_ERROR", error_message: error.message }, false);
-        status.textContent = "Could not reach the API";
+        status.textContent = "Не удалось подключиться к API";
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = "Process payload";
+        submitButton.textContent = "Обработать данные";
       }
     });
   </script>

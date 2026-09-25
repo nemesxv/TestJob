@@ -9,26 +9,26 @@ public sealed class ProcessPageRequestValidator : AbstractValidator<ProcessPageR
     {
         RuleFor(x => x.Selector)
             .NotEmpty()
-            .WithMessage("The selector field is required.");
+            .WithMessage("Поле selector обязательно.");
 
         RuleFor(x => x.Attribute)
             .NotEmpty()
-            .WithMessage("The attribute field is required.");
+            .WithMessage("Поле attribute обязательно.");
 
         RuleFor(x => x.UrlBase64)
             .NotEmpty()
-            .WithMessage("The url_b64 field is required.");
+            .WithMessage("Поле url_b64 обязательно.");
 
         RuleFor(x => x.EncryptedTextBytesBase64)
             .NotEmpty()
-            .WithMessage("The encrypted_text_bytes_b64 field is required.");
+            .WithMessage("Поле encrypted_text_bytes_b64 обязательно.");
 
         RuleFor(x => x.KeyBytesBase64)
             .NotEmpty()
-            .WithMessage("The key_bytes_b64 field is required.");
+            .WithMessage("Поле key_bytes_b64 обязательно.");
 
         RuleFor(x => x.PageBase64)
             .NotEmpty()
-            .WithMessage("The page_b64 field is required.");
+            .WithMessage("Поле page_b64 обязательно.");
     }
 }
