@@ -16,6 +16,7 @@ elements in PostgreSQL through Dapper.
 - indented JSON responses with the required snake_case field names
 - Swagger UI at `/api/swagger`
 - browser UI at `/` with local JSON payload loading and formatted results
+- sandboxed visual preview for `web-page.txt` and decoded `page_b64` content
 - unit tests against both supplied payloads
 
 Docker Compose is intentionally deferred to a later step.

@@ -174,6 +174,30 @@
     .error strong { display: block; color: var(--danger); margin-bottom: 3px; }
     .status { min-height: 21px; margin: 12px 0 0; color: var(--muted); font-size: 13px; }
 
+    .preview-panel { margin-top: 18px; }
+    .preview-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .preview-frame-wrap {
+      position: relative;
+      min-height: 560px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+    }
+    .preview-frame { display: block; width: 100%; height: 720px; border: 0; background: white; }
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 30px;
+      color: #5f6b80;
+      background: #f5f7fb;
+      text-align: center;
+    }
+    .preview-placeholder[hidden] { display: none; }
+    .security-note { color: var(--muted); font-size: 12px; }
+
     @media (max-width: 860px) {
       .workspace { grid-template-columns: 1fr; }
       .topbar nav span { display: none; }
@@ -251,23 +275,57 @@
         </div>
       </section>
     </section>
+
+    <section class="panel preview-panel" id="page-preview">
+      <div class="panel-head">
+        <div>
+          <h2>Captured page</h2>
+          <p class="hint">A safe visual rendering of <code>web-page.txt</code> or the decoded <code>page_b64</code> field.</p>
+        </div>
+        <div class="preview-actions">
+          <span class="security-note">Scripts and network requests are blocked</span>
+          <label class="file-button">Load web-page.txt<input id="html-file" type="file" accept=".html,.htm,.txt,text/html,text/plain"></label>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <iframe class="preview-frame" id="page-frame" sandbox="" referrerpolicy="no-referrer" title="Captured HTML page preview"></iframe>
+        <div class="preview-placeholder" id="preview-placeholder">Load <code>web-page.txt</code> directly, or load one of the JSON payloads above to decode and render its HTML page.</div>
+      </div>
+      <p class="status" id="preview-status" role="status"></p>
+    </section>
   </main>
 
   <script>
     const fieldNames = ["selector", "attribute", "url_b64", "encrypted_text_bytes_b64", "key_bytes_b64", "page_b64"];
     const form = document.querySelector("#request-form");
     const fileInput = document.querySelector("#payload-file");
+    const htmlFileInput = document.querySelector("#html-file");
     const submitButton = document.querySelector("#submit-button");
     const status = document.querySelector("#status");
     const emptyState = document.querySelector("#empty-state");
     const results = document.querySelector("#results");
     const errorBox = document.querySelector("#error-box");
 
+    function decodeBase64Utf8(value) {
+      const bytes = Uint8Array.from(atob(value.trim()), char => char.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    function renderPage(html, sourceName) {
+      const policy = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'">`;
+      const safeDocument = /<head[\s>]/i.test(html)
+        ? html.replace(/<head([^>]*)>/i, `<head$1>${policy}`)
+        : `${policy}${html}`;
+
+      document.querySelector("#page-frame").srcdoc = safeDocument;
+      document.querySelector("#preview-placeholder").hidden = true;
+      document.querySelector("#preview-status").textContent = `${sourceName} · ${new Blob([html]).size.toLocaleString()} bytes rendered in a sandbox`;
+    }
+
     function decodeUrl() {
       const preview = document.querySelector("#url-preview");
       try {
-        const bytes = Uint8Array.from(atob(document.querySelector("#url_b64").value.trim()), char => char.charCodeAt(0));
-        const value = new TextDecoder().decode(bytes);
+        const value = decodeBase64Utf8(document.querySelector("#url_b64").value);
         preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Decoded URL" }), ` — ${value}`);
       } catch {
         preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Decoded URL" }), " — invalid Base64");
@@ -279,6 +337,9 @@
         document.querySelector(`#${name}`).value = payload[name] ?? "";
       }
       decodeUrl();
+      if (payload.page_b64) {
+        renderPage(decodeBase64Utf8(payload.page_b64), "Decoded page_b64");
+      }
     }
 
     function appendItems(targetId, items) {
@@ -320,6 +381,16 @@
         status.textContent = `Loaded ${file.name}`;
       } catch (error) {
         status.textContent = `Could not load JSON: ${error.message}`;
+      }
+    });
+
+    htmlFileInput.addEventListener("change", async () => {
+      const file = htmlFileInput.files?.[0];
+      if (!file) return;
+      try {
+        renderPage(await file.text(), file.name);
+      } catch (error) {
+        document.querySelector("#preview-status").textContent = `Could not render HTML: ${error.message}`;
       }
     });
 
