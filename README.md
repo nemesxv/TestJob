@@ -15,6 +15,7 @@ elements in PostgreSQL through Dapper.
 - asynchronous PostgreSQL writes through Dapper/Npgsql
 - indented JSON responses with the required snake_case field names
 - Swagger UI at `/api/swagger`
+- browser UI at `/` with local JSON payload loading and formatted results
 - unit tests against both supplied payloads
 
 Docker Compose is intentionally deferred to a later step.
@@ -33,8 +34,9 @@ dotnet test TestJob.slnx
 dotnet run --project src/TestJob.Api --urls http://localhost:8090
 ```
 
-Open `http://localhost:8090/api/swagger` and submit either
-`json_payload_1.txt` or `json_payload_2.txt` to `POST /api/process-page`.
+Open `http://localhost:8090/` for the browser UI, load either
+`json_payload_1.txt` or `json_payload_2.txt`, and submit it to the API. Swagger
+remains available at `http://localhost:8090/api/swagger`.
 
 The `elements` table is created automatically on the first successful request.
 

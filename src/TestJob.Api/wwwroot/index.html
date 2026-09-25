@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page Inspector · TestJob API</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --canvas: #090d16;
+      --surface: rgba(18, 25, 40, .88);
+      --surface-strong: #151e30;
+      --line: rgba(163, 177, 204, .18);
+      --muted: #99a7bf;
+      --text: #f4f7fc;
+      --lime: #c8f15a;
+      --cyan: #56d8d0;
+      --danger: #ff747e;
+      --shadow: 0 28px 80px rgba(0, 0, 0, .36);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(86, 216, 208, .14), transparent 30rem),
+        radial-gradient(circle at 90% 12%, rgba(200, 241, 90, .09), transparent 32rem),
+        var(--canvas);
+      color: var(--text);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .14;
+      background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, black, transparent 65%);
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 64px;
+    }
+
+    .topbar, .hero, .panel, .metric, .result-card {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 16px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 750; letter-spacing: -.02em; }
+    .mark { width: 12px; height: 12px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 24px var(--lime); }
+    .topbar nav { display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 14px; }
+    .topbar a:hover { color: var(--text); }
+
+    .hero {
+      margin-top: 18px;
+      padding: clamp(28px, 5vw, 62px);
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "API";
+      position: absolute;
+      right: -16px;
+      bottom: -74px;
+      color: rgba(255, 255, 255, .025);
+      font-size: clamp(150px, 24vw, 290px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -.08em;
+    }
+
+    .eyebrow { margin: 0 0 14px; color: var(--lime); font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { max-width: 780px; margin: 0; font-size: clamp(40px, 7vw, 82px); line-height: .96; letter-spacing: -.065em; }
+    .hero p:last-child { max-width: 680px; margin: 24px 0 0; color: var(--muted); font-size: clamp(16px, 2vw, 19px); }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(360px, .96fr); gap: 18px; margin-top: 18px; align-items: start; }
+    .panel { padding: 24px; border-radius: 22px; }
+    .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+    h2 { margin: 0; font-size: 22px; letter-spacing: -.035em; }
+    .hint { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+    .file-button, button[type="submit"] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 760;
+      transition: transform .15s ease, filter .15s ease;
+    }
+
+    .file-button:hover, button[type="submit"]:hover { transform: translateY(-1px); filter: brightness(1.06); }
+    .file-button { padding: 9px 12px; background: var(--surface-strong); border: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+    .file-button input { display: none; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { display: grid; gap: 7px; color: #cbd4e4; font-size: 13px; font-weight: 650; }
+    .wide { grid-column: 1 / -1; }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      outline: none;
+      background: rgba(5, 9, 17, .72);
+      color: var(--text);
+      padding: 11px 12px;
+      font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    input:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(86, 216, 208, .12); }
+    textarea { min-height: 82px; resize: vertical; }
+
+    details { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 13px; background: rgba(5, 9, 17, .35); }
+    summary { cursor: pointer; padding: 12px 14px; color: var(--muted); font-weight: 650; }
+    details .details-body { display: grid; gap: 14px; padding: 0 14px 14px; }
+
+    .decoded { grid-column: 1 / -1; padding: 10px 12px; border-left: 2px solid var(--cyan); background: rgba(86, 216, 208, .06); color: var(--muted); font-size: 13px; word-break: break-all; }
+    .decoded strong { color: var(--cyan); }
+
+    button[type="submit"] { width: 100%; margin-top: 18px; padding: 13px 18px; background: var(--lime); color: #11170a; }
+    button[disabled] { cursor: wait; opacity: .7; transform: none; }
+
+    .empty {
+      min-height: 440px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      color: var(--muted);
+      text-align: center;
+      padding: 30px;
+    }
+
+    .empty-symbol { display: block; margin: 0 auto 12px; color: var(--cyan); font: 700 32px/1 ui-monospace, monospace; }
+    .results[hidden], .error[hidden] { display: none; }
+    .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .metric { padding: 18px; border-radius: 16px; box-shadow: none; }
+    .metric span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .metric strong { display: block; margin-top: 4px; font-size: 30px; letter-spacing: -.04em; }
+
+    .result-card { margin-top: 12px; padding: 17px; border-radius: 16px; box-shadow: none; }
+    .result-card h3 { margin: 0 0 9px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .result-card p { margin: 0; word-break: break-word; }
+    .scroll-list { max-height: 230px; overflow: auto; margin: 0; padding-left: 20px; color: #dce4f1; font: 12px/1.6 ui-monospace, monospace; word-break: break-all; }
+    pre { max-height: 320px; overflow: auto; margin: 0; white-space: pre-wrap; word-break: break-word; color: #dce4f1; font: 12px/1.55 ui-monospace, monospace; }
+
+    .error { padding: 16px; border: 1px solid rgba(255, 116, 126, .38); border-radius: 14px; background: rgba(255, 116, 126, .08); color: #ffd9dc; }
+    .error strong { display: block; color: var(--danger); margin-bottom: 3px; }
+    .status { min-height: 21px; margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+      .topbar nav span { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 20px, 1180px); padding-top: 10px; }
+      .hero, .panel { padding: 20px; border-radius: 18px; }
+      .grid { grid-template-columns: 1fr; }
+      .wide, details, .decoded { grid-column: auto; }
+      .panel-head { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="mark"></span> TestJob API</div>
+      <nav><span>.NET 10 · PostgreSQL</span><a href="/api/swagger">Swagger ↗</a></nav>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">HTML processing workbench</p>
+      <h1>Inspect a page.<br>Extract the signal.</h1>
+      <p>Decode, parse, query and decrypt the supplied payload in one request. Every discovered element is persisted through the API’s PostgreSQL repository.</p>
+    </section>
+
+    <section class="workspace">
+      <form class="panel" id="request-form">
+        <div class="panel-head">
+          <div>
+            <h2>Request</h2>
+            <p class="hint">Load one of the supplied <code>json_payload_*.txt</code> files or enter values manually.</p>
+          </div>
+          <label class="file-button">Load JSON<input id="payload-file" type="file" accept=".json,.txt,application/json,text/plain"></label>
+        </div>
+
+        <div class="grid">
+          <label>CSS selector<input id="selector" name="selector" placeholder="a[href]" required></label>
+          <label>HTML attribute<input id="attribute" name="attribute" placeholder="href" required></label>
+          <label class="wide">URL · Base64<input id="url_b64" name="url_b64" autocomplete="off" required></label>
+          <div class="decoded" id="url-preview"><strong>Decoded URL</strong> — waiting for input</div>
+
+          <details>
+            <summary>Encrypted and page data</summary>
+            <div class="details-body">
+              <label>Encrypted text · Base64<textarea id="encrypted_text_bytes_b64" name="encrypted_text_bytes_b64" required></textarea></label>
+              <label>AES-256 key · Base64<textarea id="key_bytes_b64" name="key_bytes_b64" required></textarea></label>
+              <label>HTML page · Base64<textarea id="page_b64" name="page_b64" required></textarea></label>
+            </div>
+          </details>
+        </div>
+
+        <button id="submit-button" type="submit">Process payload</button>
+        <p class="status" id="status" role="status"></p>
+      </form>
+
+      <section class="panel" aria-live="polite">
+        <div class="panel-head">
+          <div><h2>Response</h2><p class="hint">Structured output from the processing service.</p></div>
+        </div>
+
+        <div class="empty" id="empty-state"><div><span class="empty-symbol">{ }</span>Submit a valid payload to see extracted elements, email addresses and decrypted text.</div></div>
+        <div class="error" id="error-box" hidden><strong id="error-code"></strong><span id="error-message"></span></div>
+        <div class="results" id="results" hidden>
+          <div class="metrics">
+            <div class="metric"><span>Elements</span><strong id="elements-count">0</strong></div>
+            <div class="metric"><span>Emails</span><strong id="emails-count">0</strong></div>
+          </div>
+          <article class="result-card"><h3>Decoded URL</h3><p id="result-url"></p></article>
+          <article class="result-card"><h3>Decrypted plain text</h3><p id="decrypted-text"></p></article>
+          <article class="result-card"><h3>Element attributes</h3><ol class="scroll-list" id="attribute-list"></ol></article>
+          <article class="result-card"><h3>Email addresses</h3><ol class="scroll-list" id="email-list"></ol></article>
+          <article class="result-card"><h3>Raw JSON</h3><pre id="raw-json"></pre></article>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const fieldNames = ["selector", "attribute", "url_b64", "encrypted_text_bytes_b64", "key_bytes_b64", "page_b64"];
+    const form = document.querySelector("#request-form");
+    const fileInput = document.querySelector("#payload-file");
+    const submitButton = document.querySelector("#submit-button");
+    const status = document.querySelector("#status");
+    const emptyState = document.querySelector("#empty-state");
+    const results = document.querySelector("#results");
+    const errorBox = document.querySelector("#error-box");
+
+    function decodeUrl() {
+      const preview = document.querySelector("#url-preview");
+      try {
+        const bytes = Uint8Array.from(atob(document.querySelector("#url_b64").value.trim()), char => char.charCodeAt(0));
+        const value = new TextDecoder().decode(bytes);
+        preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Decoded URL" }), ` — ${value}`);
+      } catch {
+        preview.replaceChildren(Object.assign(document.createElement("strong"), { textContent: "Decoded URL" }), " — invalid Base64");
+      }
+    }
+
+    function fillRequest(payload) {
+      for (const name of fieldNames) {
+        document.querySelector(`#${name}`).value = payload[name] ?? "";
+      }
+      decodeUrl();
+    }
+
+    function appendItems(targetId, items) {
+      const target = document.querySelector(`#${targetId}`);
+      target.replaceChildren();
+      for (const value of items ?? []) {
+        const item = document.createElement("li");
+        item.textContent = value || "(empty attribute)";
+        target.append(item);
+      }
+    }
+
+    function showResponse(response, ok) {
+      emptyState.hidden = true;
+      if (!ok || response.is_error) {
+        results.hidden = true;
+        errorBox.hidden = false;
+        document.querySelector("#error-code").textContent = response.error_code || "REQUEST_FAILED";
+        document.querySelector("#error-message").textContent = response.error_message || "The API rejected the request.";
+        return;
+      }
+
+      errorBox.hidden = true;
+      results.hidden = false;
+      document.querySelector("#elements-count").textContent = response.elements_count;
+      document.querySelector("#emails-count").textContent = response.emails_count;
+      document.querySelector("#result-url").textContent = response.url;
+      document.querySelector("#decrypted-text").textContent = response.decrypted_plain_text;
+      document.querySelector("#raw-json").textContent = JSON.stringify(response, null, 2);
+      appendItems("attribute-list", response.elements_attr_list);
+      appendItems("email-list", response.emails_list);
+    }
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      try {
+        fillRequest(JSON.parse(await file.text()));
+        status.textContent = `Loaded ${file.name}`;
+      } catch (error) {
+        status.textContent = `Could not load JSON: ${error.message}`;
+      }
+    });
+
+    document.querySelector("#url_b64").addEventListener("input", decodeUrl);
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      submitButton.disabled = true;
+      submitButton.textContent = "Processing…";
+      status.textContent = "Sending request to the API";
+
+      const payload = Object.fromEntries(fieldNames.map(name => [name, document.querySelector(`#${name}`).value.trim()]));
+      try {
+        const httpResponse = await fetch("/api/process-page", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const response = await httpResponse.json();
+        showResponse(response, httpResponse.ok);
+        status.textContent = httpResponse.ok ? "Processing completed" : `Request failed with HTTP ${httpResponse.status}`;
+      } catch (error) {
+        showResponse({ error_code: "NETWORK_ERROR", error_message: error.message }, false);
+        status.textContent = "Could not reach the API";
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Process payload";
+      }
+    });
+  </script>
+</body>
+</html>
