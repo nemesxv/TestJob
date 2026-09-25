@@ -1,6 +1,5 @@
 using FluentValidation;
 using TestJob.Api.Models;
-using TestJob.Api.Validation;
 
 namespace TestJob.Api.Tests;
 

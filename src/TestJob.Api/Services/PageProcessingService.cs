@@ -3,7 +3,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-using TestJob.Api.Data;
+using Dapper;
+using Npgsql;
 using TestJob.Api.Models;
 
 namespace TestJob.Api.Services;
@@ -11,6 +12,33 @@ namespace TestJob.Api.Services;
 public interface IPageProcessingService
 {
     Task<ProcessPageResponse> ProcessAsync(ProcessPageRequest request, CancellationToken cancellationToken);
+}
+
+public interface IElementRepository
+{
+    Task InsertAsync(IReadOnlyCollection<DiscoveredElement> elements, CancellationToken cancellationToken);
+}
+
+public sealed class ElementRepository(NpgsqlDataSource dataSource) : IElementRepository
+{
+    private const string InsertSql = """
+        INSERT INTO elements (attribute_value, html)
+        VALUES (@AttributeValue, @Html);
+        """;
+
+    public async Task InsertAsync(
+        IReadOnlyCollection<DiscoveredElement> elements,
+        CancellationToken cancellationToken)
+    {
+        if (elements.Count == 0)
+            return;
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await connection.ExecuteAsync(new CommandDefinition(
+            InsertSql,
+            elements,
+            cancellationToken: cancellationToken));
+    }
 }
 
 public sealed class PageProcessingService(IElementRepository elementRepository) : IPageProcessingService
@@ -72,9 +100,7 @@ public sealed class PageProcessingService(IElementRepository elementRepository) 
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return ProcessPageResponse.Error(
-                ErrorCodes.UnexpectedError,
-                "Во время обработки запроса произошла непредвиденная ошибка.");
+            return ProcessPageResponse.Error(ErrorCodes.UnexpectedError, exception.Message);
         }
     }
 

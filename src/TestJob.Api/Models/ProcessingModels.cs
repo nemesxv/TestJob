@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using FluentValidation;
 
 namespace TestJob.Api.Models;
 
@@ -72,4 +73,17 @@ public static class ErrorCodes
     public const string InvalidEncryptionData = "INVALID_ENCRYPTION_DATA";
     public const string InvalidSelector = "INVALID_SELECTOR";
     public const string UnexpectedError = "UNEXPECTED_ERROR";
+}
+
+public sealed class ProcessPageRequestValidator : AbstractValidator<ProcessPageRequest>
+{
+    public ProcessPageRequestValidator()
+    {
+        RuleFor(x => x.Selector).NotEmpty().WithMessage("Поле selector обязательно.");
+        RuleFor(x => x.Attribute).NotEmpty().WithMessage("Поле attribute обязательно.");
+        RuleFor(x => x.UrlBase64).NotEmpty().WithMessage("Поле url_b64 обязательно.");
+        RuleFor(x => x.EncryptedTextBytesBase64).NotEmpty().WithMessage("Поле encrypted_text_bytes_b64 обязательно.");
+        RuleFor(x => x.KeyBytesBase64).NotEmpty().WithMessage("Поле key_bytes_b64 обязательно.");
+        RuleFor(x => x.PageBase64).NotEmpty().WithMessage("Поле page_b64 обязательно.");
+    }
 }

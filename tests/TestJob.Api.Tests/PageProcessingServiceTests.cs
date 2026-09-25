@@ -1,5 +1,4 @@
 using System.Text.Json;
-using TestJob.Api.Data;
 using TestJob.Api.Models;
 using TestJob.Api.Services;
 

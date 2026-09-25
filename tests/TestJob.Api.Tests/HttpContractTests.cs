@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using TestJob.Api.Data;
 using TestJob.Api.Models;
+using TestJob.Api.Services;
 
 namespace TestJob.Api.Tests;
 

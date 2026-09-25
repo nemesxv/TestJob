@@ -1,10 +1,8 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using TestJob.Api.Data;
 using TestJob.Api.Models;
 using TestJob.Api.Services;
-using TestJob.Api.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,9 +10,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.WriteIndented = true)
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
         new BadRequestObjectResult(ProcessPageResponse.Error(ErrorCodes.ValidationError,
-            context.ModelState.Values.SelectMany(value => value.Errors).Any()
-                ? "Некорректное тело JSON-запроса."
-                : "Проверка запроса завершилась ошибкой.")));
+            "Некорректное тело JSON-запроса.")));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -39,10 +35,8 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "TestJob API — версия 1");
 });
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
 app.MapControllers();
+app.MapGet("/", () => Results.Redirect("/api/swagger"));
 app.Run();
 
 public partial class Program;
