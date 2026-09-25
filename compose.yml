@@ -1,12 +1,22 @@
 name: testjob
 services:
   api:
-    build: .
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    working_dir: /src
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        dotnet restore src/TestJob.Api/TestJob.Api.csproj &&
+        dotnet build src/TestJob.Api/TestJob.Api.csproj -c Release --no-restore --no-incremental &&
+        dotnet run --project src/TestJob.Api/TestJob.Api.csproj -c Release --no-build --no-launch-profile
     environment:
       ASPNETCORE_URLS: http://+:8090
       ConnectionStrings__Postgres: Host=db;Database=testjob;Username=testjob;Password=testjob
     ports:
       - "127.0.0.1:8090:8090"
+    volumes:
+      - .:/src
     depends_on:
       db:
         condition: service_healthy
